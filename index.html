@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MangaJH</title>
+  <!-- CONEXIÓN A LOS ICONOS DE REDES SOCIALES -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0B0C10">
+  <link rel="apple-touch-icon" href="https://www.svgrepo.com/show/416602/book-comics-manga.svg">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  
+  <!-- CONEXIÓN A TU ARCHIVO DE DISEÑO -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <header class="app-header">
+    <div class="logo-container">
+      <button class="menu-btn" onclick="toggleMenu()">☰</button>
+      <h1 onclick="forceHome()">MangaJH</h1>
+    </div>
+    <div class="header-right">
+      <!-- NUEVO: Botón de Notificaciones -->
+      <div style="position: relative; margin-right: 10px;">
+        <button id="notiBtn" class="theme-toggle" onclick="toggleNotiPanel()" title="Notificaciones">🔔</button>
+        <span id="notiBadge" style="display: none; position: absolute; top: 0; right: 0; width: 12px; height: 12px; background-color: var(--danger); border-radius: 50%; box-shadow: 0 0 8px var(--danger);"></span>
+      </div>
+
+      <!-- Botón de filtro a la izquierda del buscador -->
+      <button id="filterBtn" class="theme-toggle" onclick="toggleFilterPanel()" title="Filtros Avanzados" style="margin-right: 10px;">🎛️</button>
+      <input type="text" id="searchInput" class="search-box" placeholder="Buscar título o género..." onkeyup="handleSearch()">
+      <button id="themeToggle" class="theme-toggle" onclick="toggleTheme()" title="Cambiar Apariencia">☀️</button>
+    </div>
+  </header>
+
+  <!-- PANEL DE FILTROS DESPLEGABLE -->
+  <div id="filterPanel" class="filter-panel">
+    <div class="filter-section">
+      <span class="filter-label">Tipos:</span>
+      <div class="filter-group" id="group-tipos">
+        <button class="filter-pill" onclick="this.classList.toggle('active')" data-value="manga">💭 MANGAS</button>
+        <button class="filter-pill" onclick="this.classList.toggle('active')" data-value="manhwa">📱 MANHWAS</button>
+        <button class="filter-pill" onclick="this.classList.toggle('active')" data-value="comic">💥 CÓMICS</button>
+        <button class="filter-pill" onclick="this.classList.toggle('active')" data-value="novela">📖 NOVELAS L.</button>
+        <button class="filter-pill" onclick="this.classList.toggle('active')" data-value="novela_normal">📚 NOVELAS</button>
+        <button class="filter-pill" onclick="this.classList.toggle('active')" data-value="webnovel">🌐 WEBNOVELS</button>
+        <button class="filter-pill" onclick="this.classList.toggle('active')" data-value="fanfic">✍️ FANFICS</button>
+        <button class="filter-pill" onclick="this.classList.toggle('active')" data-value="novela_corta">📘 NOVELAS C.</button>
+      </div>
+    </div> 
+
+    <div class="filter-section">
+      <span class="filter-label">Estado:</span>
+      <div class="filter-group" id="group-estado">
+        <button class="filter-pill" onclick="this.classList.toggle('active')" data-value="emision">🟢 En Emisión</button>
+        <button class="filter-pill" onclick="this.classList.toggle('active')" data-value="finalizado">🔴 Finalizados</button>
+        <button class="filter-pill" onclick="this.classList.toggle('active')" data-value="pausado">🟡 Pausados</button>
+      </div>
+    </div>
+
+    <div class="filter-section">
+      <span class="filter-label">Género:</span>
+      <div class="filter-group" id="group-generos">
+      </div>
+    </div>
+
+    <div class="filter-section">
+      <span class="filter-label">Ordenar por:</span>
+      <!-- NOTA: Ordenar por solo deja marcar UNA opción -->
+      <div class="filter-group" id="group-orden">
+        <button class="filter-pill" onclick="selectSinglePill(this)" data-value="calificacion">⭐ Mejor Calificados</button>
+        <button class="filter-pill" onclick="selectSinglePill(this)" data-value="popularidad">🔥 Más Populares</button>
+        <button class="filter-pill" onclick="selectSinglePill(this)" data-value="recientes">🕒 Recientes</button>
+      </div>
+    </div>
+
+    <div style="text-align: right; margin-top: 10px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 8px;">
+      <button class="btn-read" style="width: auto; padding: 5px 12px; font-size: 0.75em; border-radius: 6px; box-shadow: none;" onclick="applyFilters()">Aplicar Filtros 🔍</button>
+    </div>
+  </div>
+  
+  <!-- PANEL DE NOTIFICACIONES -->
+  <div id="notiPanel" class="filter-panel" style="width: 300px; padding: 0;">
+    <div style="padding: 12px 15px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.2);">
+      <h3 style="margin: 0; color: var(--accent-1); font-size: 1.1em;">🔔 Notificaciones</h3>
+      <button style="background: none; border: none; color: var(--text-main); font-size: 0.8em; cursor: pointer;" onclick="markAllNotisRead()">Marcar leídas</button>
+    </div>
+    <div id="notiList" style="max-height: 350px; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 8px;">
+      <div style="text-align: center; color: var(--text-main); padding: 20px 0;">No hay notificaciones nuevas.</div>
+    </div>
+  </div><!-- Fin del filterPanel -->
+
+  <nav class="sidebar" id="sidebar">
+    <div style="position: absolute; top: 15px; left: 15px; right: 15px; display: flex; justify-content: space-between; align-items: center;">
+      <button id="userBtn" onclick="openAuthModal()" style="width: auto; padding: 8px 15px; border-radius: 12px; font-size: 0.85em; font-weight: bold; background: var(--accent-1); color: #0B0C10; border: none; cursor: pointer; text-align: left; max-width: 170px; line-height: 1.4;">Ingresar</button>
+      <button class="close-menu-btn" onclick="toggleMenu()" style="position: static;">✕</button>
+    </div>
+    
+    <button class="nav-link active" id="nav-home" onclick="resetScrollAndGo('home')">🏠 Inicio</button>
+    <button class="nav-link" id="nav-foro" onclick="resetScrollAndGo('foro')">🗣️ ForoMJH</button>
+    <button class="nav-link" id="nav-aportes" onclick="resetScrollAndGo('aportes')">🎨 Aportes</button>
+    <button class="nav-link" id="nav-mangas" onclick="resetScrollAndGo('mangas_only')">💭 Solo Mangas</button>
+    <button class="nav-link" id="nav-novelas" onclick="resetScrollAndGo('novelas_only')">📖 Solo Novelas L.</button>
+    <button class="nav-link" id="nav-manhwas" onclick="resetScrollAndGo('manhwas_only')">📱 Solo Manhwas</button>
+    
+    <button class="nav-link" onclick="toggleDropdown('libDropdown', this)" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+      <span>📚 Mi Biblioteca</span>
+      <span class="dropdown-arrow">▼</span>
+    </button>
+    <div id="libDropdown" style="display: none; background: rgba(0,0,0,0.2);">
+      <button class="nav-link" id="nav-fav" onclick="resetScrollAndGo('fav')" style="padding-left: 40px; font-size: 0.95em;">⭐ Mis Favoritos</button>
+      <button class="nav-link" id="nav-seen" onclick="resetScrollAndGo('seen')" style="padding-left: 40px; font-size: 0.95em;">✅ Terminados</button>
+      <button class="nav-link" id="nav-inventory" onclick="resetScrollAndGo('inventory')" style="padding-left: 40px; font-size: 0.95em; display: none;">🎒 Mi Inventario</button>
+    </div>
+
+    <!-- ¡BOTÓN DE MENSAJES CON NOTIFICACIÓN! -->
+    <button class="nav-link" id="nav-messages" onclick="openFriendsList()" style="display: none; color: var(--info); font-weight: bold; margin-top: auto; position: relative;">
+      💬 Mis Mensajes
+      <span id="unreadBadge" style="display: none; position: absolute; top: 12px; right: 20px; width: 10px; height: 10px; background-color: var(--danger); border-radius: 50%; box-shadow: 0 0 8px var(--danger);"></span>
+    </button>
+
+    <button class="nav-link" id="nav-shop" onclick="resetScrollAndGo('shop')" style="display: none; color: var(--star); font-weight: bold;">🛒 Tienda de Premios</button>
+    <button class="nav-link" id="nav-logout" onclick="logout()" style="display: none; color: var(--danger);">🚪 Cerrar Sesión</button>
+
+    <div class="sidebar-support" style="margin-top: 0;">
+      <span>¿Necesitas ayuda?</span>
+      <a href="mailto:hameeranime@gmail.com">hameeranime@gmail.com</a>
+    </div>
+  </nav>
+
+  <main id="mainContent">
+    <h2 class="view-title" id="viewTitle" style="display: none;">Mostrando...</h2>
+    <div id="contentArea"></div>
+    <div id="detailsArea"></div>
+    <div id="shopArea"></div>
+    <div id="profileArea"></div>
+    <div id="inventoryArea"></div>
+  </main>
+
+  <!-- ========================================== -->
+  <!-- VISTA: FOROMJH (COMUNIDAD)                 -->
+  <!-- ========================================== -->
+  <div id="foroView" style="display: none; padding-top: 20px; padding-bottom: 80px;">
+    
+    <!-- Encabezado del Foro -->
+    <div style="padding: 0 15px; text-align: center; margin-bottom: 20px;">
+      <h2 style="margin-bottom: 5px;"><span style="color: var(--accent-1);">Foro</span>MJH 🗣️</h2>
+      <p style="color: var(--text-main); font-size: 0.9em;">Comparte teorías, pide recomendaciones y debate con la comunidad.</p>
+    </div>
+
+    <!-- Caja para crear una nueva publicación -->
+    <div class="create-post-box">
+      <textarea id="newPostContent" placeholder="¿Qué estás leyendo o pensando hoy?..." maxlength="500"></textarea>
+      
+      <!-- Fila de opciones: Spoiler, Anónimo y Botón -->
+      <div class="post-actions-row" style="flex-wrap: wrap; gap: 10px;">
+        <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
+            <label class="spoiler-checkbox">
+              <input type="checkbox" id="newPostSpoiler">
+              <span>🚨 Spoiler</span>
+            </label>
+            
+            <label class="spoiler-checkbox" style="color: var(--text-main);">
+              <input type="checkbox" id="newPostAnon" onchange="toggleAnonInput()">
+              <span>🕵️ Anónimo</span>
+            </label>
+            
+            <input type="text" id="anonNameInput" class="search-box" style="display: none; width: 140px; padding: 5px 10px; font-size: 0.85em; height: 32px;" placeholder="Tu alias (opcional)" maxlength="15">
+        </div>
+        
+        <button class="btn-read" onclick="publishForoPost()" id="btnPublishPost" style="width: auto; padding: 8px 20px;">Publicar</button>
+      </div>
+    </div>
+
+    <!-- Contenedor donde aparecerán todas las publicaciones (El Muro) -->
+    <div id="foroFeed" class="foro-feed-container">
+       <!-- El JavaScript inyectará las publicaciones aquí mágicamente -->
+    </div>
+
+  </div>
+
+  <!-- ========================================== -->
+  <!-- VISTA: APORTES DE LA COMUNIDAD             -->
+  <!-- ========================================== -->
+  <div id="aportesView" style="display: none; padding-top: 0; margin-top: -28px; padding-bottom: 80px;">
+    
+    <!-- Encabezado con Botón Flotante ➕ -->
+    <div style="padding: 0 15px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
+      <div>
+        <h2 style="margin: 0 0 2px 0; text-align: left; font-size: 1.6em;"><span style="color: var(--accent-1);">Aportes</span>MJH 🎨</h2>
+        <p style="color: var(--text-main); font-size: 0.85em; margin: 0; text-align: left;">Descubre y comparte obras con la comunidad.</p>
+      </div>
+      <div style="display: flex; gap: 10px; margin-top: 5px;">
+        <button class="btn-read" onclick="openAporteModal()" style="width: 45px; height: 45px; padding: 0; font-size: 1.5em; border-radius: 50%; background: var(--accent-1); color: #000; border: none; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(102, 252, 241, 0.4);" title="Subir Nueva Obra">➕</button>
+      </div>
+    </div>
+
+    <!-- GALERÍA DE OBRAS -->
+    <div id="aportesGridContainer">
+      <div id="aportesGrid" class="grid-container" style="display: grid; padding: 0 15px;">
+         <!-- Se inyecta con JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- FOOTER Y AVISOS LEGALES                    -->
+  <!-- ========================================== -->
+  <footer class="app-footer" id="appFooter">
+    <div class="footer-container">
+      <div class="footer-brand">
+        <h2>MangaJH</h2>
+        <p>Tu biblioteca y comunidad de lectura en línea.</p>
+      </div>
+      
+      <div class="footer-legal-grid">
+        <!-- CAJA 1 -->
+        <div class="legal-box" onclick="toggleLegalBox(this)">
+          <h4><span>🔞 Clasificación de Edad y Responsabilidad</span> <span class="toggle-arrow">▼</span></h4>
+          <p>El catálogo de MangaJH incluye obras gráficas y literarias dirigidas a diversas audiencias, lo que puede incluir material con temáticas maduras exclusivo para mayores de edad (18+). El acceso, lectura y consumo de este contenido es bajo tu propia y estricta responsabilidad. No nos hacemos responsables si un usuario decide ignorar las advertencias de clasificación, ni asumimos responsabilidad si un menor de edad accede a material no apto evadiendo estas indicaciones; la supervisión recae exclusivamente en sus padres o tutores legales. De igual manera, te instamos a tener extrema precaución con la información que decides compartir en los chats privados. MangaJH no se hace responsable por el contenido, acuerdos o datos personales intercambiados en la mensajería.</p>
+        </div>
+        
+        <!-- CAJA 2 -->
+        <div class="legal-box" onclick="toggleLegalBox(this)">
+          <h4><span>⚖️ Derechos de Autor (DMCA)</span> <span class="toggle-arrow">▼</span></h4>
+          <p>MangaJH funciona exclusivamente como un directorio de enlaces y un visor web de lectura. Ningún archivo de lectura (PDFs, capítulos, volúmenes) se encuentra alojado ni almacenado en nuestros servidores. Todo el contenido visualizado a través de nuestro lector es incrustado y proveído por servicios externos de terceros, sobre los cuales MangaJH no tiene jurisdicción ni control directo. Si eres el autor o representante legal de alguna obra y deseas que los enlaces a tu contenido sean retirados de nuestro directorio, por favor contáctanos directamente a hameeranime@gmail.com adjuntando la documentación correspondiente, y procederemos a eliminar el acceso desde nuestra plataforma.</p>
+        </div>
+        
+        <!-- CAJA 3 -->
+        <div class="legal-box" onclick="toggleLegalBox(this)">
+          <h4><span>💬 Comunidad y Economía Virtual</span> <span class="toggle-arrow">▼</span></h4>
+          <p>Cualquier comportamiento tóxico, acoso, spam o uso indebido de los comentarios resultará en la eliminación inmediata y permanente de la cuenta infractora. Nuestro sistema de "Monedas" 💰 es una función estrictamente recreativa y de gamificación. Estas monedas virtuales no tienen ningún valor monetario en el mundo real, no pueden ser compradas con dinero real, vendidas, ni canjeadas por dinero fiduciario. MangaJH se reserva el derecho de modificar la tienda, reiniciar balances o deshabilitar esta función si se detecta un uso fraudulento.</p>
+        </div>
+        
+        <!-- CAJA 4 -->
+        <div class="legal-box" onclick="toggleLegalBox(this)">
+          <h4><span>🔒 Privacidad y Almacenamiento</span> <span class="toggle-arrow">▼</span></h4>
+          <p>MangaJH utiliza tecnologías de almacenamiento local (Local Storage) en tu navegador para guardar de forma segura tu progreso de lectura, historial, favoritos, sesión activa y artículos de tu inventario. Al utilizar nuestra web, aceptas el uso de estas tecnologías que son esenciales para el funcionamiento de tu perfil. No comercializamos tu información personal con terceros, pero te recordamos que eres el único responsable de mantener la seguridad y privacidad de tu cuenta y contraseña.</p>
+        </div>
+      </div>
+      
+      <div class="footer-bottom">
+        <p>&copy; 2026 MangaJH. Todos los derechos reservados.</p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- MODAL DE DESCARGAS -->
+  <div class="dl-modal-overlay" id="downloadModal" style="display:none; z-index: 5000;">
+    <div class="dl-modal-content" style="max-width: 450px;">
+      <button class="dl-close-btn" onclick="closeDownloadModal()">✕</button>
+      <h3 id="dlModalTitle" style="color: var(--accent-1); margin-bottom: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">Descargas</h3>
+      
+      <div id="dlWarningView" style="text-align: center; padding: 10px 0;">
+          <div style="font-size: 3.5em; margin-bottom: 10px; text-shadow: 0 0 15px rgba(255, 215, 0, 0.5);">🛡️</div>
+          <h4 style="color: var(--star); margin-bottom: 10px; font-size: 1.2em;">Aviso de Seguridad</h4>
+          <p style="color: var(--text-main); font-size: 0.95em; line-height: 1.5; margin-bottom: 20px;">
+            Algunos PDFs están en <strong>alta resolución</strong>, por lo que Google Drive podría mostrar una advertencia al intentar bajarlos indicando que el archivo es muy grande para analizar.<br><br>
+            No te preocupes, <strong>todos los archivos están libres de virus o malware</strong>.
+          </p>
+          <button class="btn-read" style="width: 100%; background: var(--success); color: #000; font-size: 1.1em; padding: 12px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0, 230, 118, 0.3);" onclick="acceptDownloadWarning()">✅ Entendido, mostrar links</button>
+      </div>
+      
+      <div id="dlModalList" style="display:none; flex-direction:column; gap:12px; max-height: 350px; overflow-y: auto; padding-right: 5px;"></div>
+    </div>
+  </div>
+
+  <!-- MODAL DE LOGIN -->
+  <div class="dl-modal-overlay" id="authModal" style="z-index: 6000;">
+    <div class="dl-modal-content" style="max-width: 320px; text-align: center;">
+      <button class="dl-close-btn" onclick="closeAuthModal()">✕</button>
+      <div style="font-size: 3em; margin-bottom: 10px;">👤</div>
+      <h3 style="color: var(--accent-1); margin: 0;" id="authModalTitle">Iniciar Sesión</h3>
+      <p style="font-size: 0.8em; color: var(--text-main); margin: 5px 0 15px 0;" id="authModalDesc">Ingresa a tu cuenta para continuar</p>
+      
+      <input type="text" id="authUsername" class="search-box" style="width: 100%; margin-bottom: 15px; text-align: center;" placeholder="Nombre de usuario">
+      <input type="password" id="authPassword" class="search-box" style="width: 100%; margin-bottom: 20px; text-align: center;" placeholder="Contraseña">
+      <button class="btn-read" onclick="processAuth()" id="authSubmitBtn">Entrar</button>
+      <p id="authMessage" style="color: var(--danger); font-size: 0.85em; margin-top: 15px; display: none; font-weight: bold;"></p>
+      
+      <div style="margin-top: 15px; font-size: 0.85em;">
+        <a href="#" id="authToggleLink" onclick="toggleAuthMode(); return false;" style="color: var(--accent-1); text-decoration: none;">¿No tienes cuenta? Regístrate aquí</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL EDITAR PERFIL -->
+  <div class="dl-modal-overlay" id="editProfileModal" style="display:none; z-index: 6000;">
+    <div class="dl-modal-content" style="max-width: 320px; text-align: center; max-height: 90vh; overflow-y: auto;">
+      <button class="dl-close-btn" onclick="closeEditProfileModal()">✕</button>
+      <div style="font-size: 3em; margin-bottom: 10px;">✏️</div>
+      <h3 style="color: var(--accent-1); margin: 0 0 10px 0;">Editar Perfil</h3>
+      <p style="font-size: 0.8em; color: var(--text-main); margin-bottom: 20px;">Personaliza tu información pública</p>
+      
+      <input type="text" id="editNameInput" class="search-box" style="width: 100%; margin-bottom: 12px; text-align: center;" placeholder="Tu Apodo (Máx 12)" maxlength="12">
+      <input type="number" id="editAgeInput" class="search-box" style="width: 100%; margin-bottom: 12px; text-align: center;" placeholder="Tu Edad (Ej: 18)">
+      <input type="text" id="editAvatarInput" class="search-box" style="width: 100%; margin-bottom: 12px; text-align: center;" placeholder="URL de tu Foto de Perfil">
+      <input type="text" id="editBannerInput" class="search-box" style="width: 100%; margin-bottom: 12px; text-align: center;" placeholder="URL de tu Banner (Fondo)">
+      <textarea id="editDescInput" class="search-box" style="width: 100%; margin-bottom: 15px; text-align: center; resize: none; border-radius: 8px; height: 70px; font-family: inherit;" placeholder="Escribe una breve descripción sobre ti..." maxlength="60"></textarea>
+      
+      <h4 style="color: var(--accent-1); margin: 5px 0 10px; font-size: 0.9em; text-align: left; border-bottom: 1px solid var(--border-color); padding-bottom: 5px;">Redes Sociales (Opcional)</h4>
+      <input type="text" id="editTiktok" class="search-box" style="width: 100%; margin-bottom: 8px; text-align: left; padding: 10px;" placeholder="🎵 Usuario o Enlace de TikTok">
+      <input type="text" id="editInsta" class="search-box" style="width: 100%; margin-bottom: 8px; text-align: left; padding: 10px;" placeholder="📸 Usuario o Enlace de Instagram">
+      <input type="text" id="editFb" class="search-box" style="width: 100%; margin-bottom: 8px; text-align: left; padding: 10px;" placeholder="📘 Usuario o Enlace de Facebook">
+      <input type="text" id="editWa" class="search-box" style="width: 100%; margin-bottom: 8px; text-align: left; padding: 10px;" placeholder="💬 WhatsApp (Número o Enlace)">
+      <input type="text" id="editDiscord" class="search-box" style="width: 100%; margin-bottom: 8px; text-align: left; padding: 10px;" placeholder="👾 Enlace de Servidor de Discord">
+      <input type="text" id="editYt" class="search-box" style="width: 100%; margin-bottom: 10px; text-align: left; padding: 10px;" placeholder="▶️ Canal o Enlace de YouTube">
+      
+      <div style="display:flex; gap:5px; margin-bottom: 20px;">
+         <input type="text" id="editCustomLabel" class="search-box" style="width: 40%; text-align: left; padding: 10px; font-size: 0.85em;" placeholder="Nombre">
+         <input type="text" id="editCustomUrl" class="search-box" style="width: 60%; text-align: left; padding: 10px; font-size: 0.85em;" placeholder="🔗 Enlace Libre Completo">
+      </div>
+
+      <!-- NUEVA SECCIÓN: CAMBIAR CONTRASEÑA -->
+      <h4 style="color: var(--accent-1); margin: 15px 0 10px; font-size: 0.9em; text-align: left; border-bottom: 1px solid var(--border-color); padding-bottom: 5px;">Seguridad (Cambiar Contraseña)</h4>
+      <input type="password" id="editCurrentPassword" class="search-box" style="width: 100%; margin-bottom: 8px; text-align: center;" placeholder="Contraseña Actual (Obligatoria si cambias clave)">
+      <input type="password" id="editNewPassword" class="search-box" style="width: 100%; margin-bottom: 15px; text-align: center;" placeholder="Nueva Contraseña (Opcional)">
+      
+      <button class="btn-read" onclick="processEditProfile()" id="btnEditProfile">Guardar Cambios</button>
+      <p id="editProfileMessage" style="color: var(--danger); font-size: 0.85em; margin-top: 15px; display: none; font-weight: bold;"></p>
+    </div>
+  </div>
+
+  <!-- MODAL DE CERRAR SESIÓN -->
+  <div class="dl-modal-overlay" id="logoutModal" style="z-index: 6000;">
+    <div class="dl-modal-content" style="max-width: 300px; text-align: center;">
+      <div style="font-size: 3em; margin-bottom: 15px;">👋</div>
+      <h3 style="color: var(--accent-1); margin: 0 0 10px 0;">Cerrar Sesión</h3>
+      <p style="color: var(--text-main); font-size: 0.9em; margin-bottom: 20px;">¿Deseas salir de tu cuenta?</p>
+      <div style="display: flex; gap: 10px;">
+        <button onclick="closeLogoutModal()" style="flex: 1; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-main); color: var(--text-main); cursor: pointer; font-weight: bold;">Cancelar</button>
+        <button onclick="confirmLogout()" style="flex: 1; padding: 10px; border-radius: 8px; border: none; background: var(--danger); color: #FFF; cursor: pointer; font-weight: bold;">Sí, salir</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL DE FILTROS AVANZADOS -->
+  <div class="dl-modal-overlay" id="filterModal" style="z-index: 7000; display: none;">
+    <div class="dl-modal-content" style="max-width: 400px;">
+      <button class="dl-close-btn" onclick="closeFilterModal()">✕</button>
+      <h3 style="color: var(--accent-1); margin: 0 0 15px 0; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">🎛️ Filtros Avanzados</h3>
+      
+      <div style="margin-bottom: 15px;">
+        <label style="display: block; color: var(--text-title); font-size: 0.9em; margin-bottom: 5px; font-weight: bold;">Formato:</label>
+       <select id="filterFormat" class="search-box" style="width: 100%;">
+          <option value="all">Todos los formatos</option>
+          <option value="manga">💭 Manga</option>
+          <option value="manhwa">📱 Manhwa</option>
+          <option value="comic">💥 Cómic</option>
+          <option value="novela">📖 Novela Ligera</option>
+          <option value="novela_normal">📚 Novela</option>
+          <option value="webnovel">🌐 Webnovel</option>
+          <option value="fanfic">✍️ Fanfic</option>
+          <option value="novela_corta">📘 Novela Corta (Nouvelle)</option>
+        </select>
+      </div>
+
+      <div style="margin-bottom: 15px;">
+        <label style="display: block; color: var(--text-title); font-size: 0.9em; margin-bottom: 5px; font-weight: bold;">Estado:</label>
+        <select id="filterStatus" class="search-box" style="width: 100%;">
+          <option value="all">Cualquier estado</option>
+          <option value="emision">🟢 En Emisión</option>
+          <option value="finalizado">🔴 Finalizado</option>
+          <option value="pausado">🟡 Pausado</option>
+        </select>
+      </div>
+
+      <div style="margin-bottom: 20px;">
+        <label style="display: block; color: var(--text-title); font-size: 0.9em; margin-bottom: 5px; font-weight: bold;">Géneros (Debe contener todos los marcados):</label>
+        <div id="filterGenresGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 10px; max-height: 150px; overflow-y: auto; padding: 12px; background: rgba(0,0,0,0.2); border-radius: 8px; border: 1px solid var(--border-color);">
+          <!-- Se llenará automáticamente con JS -->
+        </div>
+      </div>
+
+      <button class="btn-read" style="width: 100%; background: var(--accent-1); color: #000; font-size: 1.1em; padding: 12px; border-radius: 8px;" onclick="applyFilters()">Aplicar Filtros 🔍</button>
+    </div>
+  </div>
+
+  <!-- ALERTAS PERSONALIZADAS -->
+  <div class="dl-modal-overlay" id="customAlertModal" style="z-index: 8000; display: none;">
+    <div class="dl-modal-content" style="max-width: 300px; text-align: center; padding: 25px;">
+      <h3 style="color: var(--accent-1); margin: 0 0 15px 0;">Atención</h3>
+      <p id="customAlertText" style="color: var(--text-main); font-size: 1em; margin-bottom: 20px;"></p>
+      <button class="btn-read" onclick="closeCustomAlert()" style="width: auto; padding: 8px 25px;">Aceptar</button>
+    </div>
+  </div>
+
+    <!-- VISOR DE PDF (INMERSIVO) -->
+  <div id="viewerModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 9000; flex-direction: column;">
+    
+    <!-- BARRA SUPERIOR REDUCIDA -->
+    <div style="position: absolute; top: 0; left: 0; width: 100%; display: flex; justify-content: space-between; align-items: center; padding: 6px 12px; background: rgba(11, 12, 16, 0.75); backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px); border-bottom: 1px solid rgba(255,255,255,0.05); z-index: 10;">
+      
+      <div style="display: flex; align-items: center; gap: 10px; flex: 1; overflow: hidden;">
+          <h3 id="viewerTitle" style="color: #FFF; margin: 0; font-size: 0.85em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 70%; text-shadow: 0 1px 3px rgba(0,0,0,0.8);"></h3>
+          <!-- LETRERO DE LA PÁGINA GUARDADA -->
+          <span id="viewerBookmarkInfo" style="color: var(--star); font-size: 0.75em; font-weight: bold; white-space: nowrap;"></span>
+      </div>
+      
+      <div style="display: flex; gap: 8px;">
+          <!-- BOTÓN DE MARCAPÁGINAS -->
+          <button onclick="saveBookmark()" style="background: var(--info); color: #FFF; border: none; padding: 4px 10px; border-radius: 6px; font-size: 0.8em; cursor: pointer; font-weight: bold; box-shadow: 0 2px 8px rgba(30, 136, 229, 0.3);" title="Guardar página">🔖 Guardar</button>
+          
+          <button onclick="closeViewer()" style="background: var(--danger); color: #FFF; border: none; padding: 4px 12px; border-radius: 6px; font-size: 0.8em; cursor: pointer; font-weight: bold; box-shadow: 0 2px 8px rgba(229, 57, 53, 0.3);">✕ Cerrar</button>
+      </div>
+    </div>
+    <!-- El lector ahora ocupa el 100% real de la pantalla -->
+    <iframe id="viewerFrame" src="" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; background: #FFF; z-index: 1;"></iframe>
+  </div>
+
+  <!-- MODAL DE SÚPER COMENTARIO -->
+  <div class="dl-modal-overlay" id="superCommentModal" style="z-index: 6000; display: none;">
+    <div class="dl-modal-content" style="max-width: 350px; text-align: center;">
+      <button class="dl-close-btn" onclick="closeSuperCommentModal()">✕</button>
+      <h3 style="color: var(--star); margin: 0 0 10px 0;">💎 Súper Comentario</h3>
+      <p style="font-size: 0.85em; color: var(--text-main); margin-bottom: 15px;">Destaca tu respuesta y apoya al creador (Máx. 3 por publicación).</p>
+      
+      <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+         <button class="btn-read amount-btn" id="btn-amount-10" onclick="selectDonationAmount(10)" style="flex:1; background: var(--bg-main); border: 1px solid #FFB74D; color: #FFF; transition: 0.2s;">💫 10</button>
+         <button class="btn-read amount-btn" id="btn-amount-50" onclick="selectDonationAmount(50)" style="flex:1; background: var(--bg-main); border: 1px solid #81D4FA; color: #FFF; transition: 0.2s;">🌟 50</button>
+         <button class="btn-read amount-btn" id="btn-amount-100" onclick="selectDonationAmount(100)" style="flex:1; background: var(--bg-main); border: 1px solid #18FFFF; color: #FFF; transition: 0.2s;">💎 100</button>
+      </div>
+      
+      <textarea id="superCommentText" class="comment-textarea" style="width: 100%; height: 80px; margin-bottom: 15px; font-size: 0.9em;" placeholder="Escribe tu mensaje destacado..."></textarea>
+      
+      <input type="hidden" id="superCommentPostId">
+      <input type="hidden" id="superCommentAuthor">
+      <input type="hidden" id="superCommentAmount" value="0">
+      
+      <button class="btn-read" id="btnSendSuperComment" style="background: var(--bg-main); color: var(--text-main); border: 1px solid var(--border-color); cursor: not-allowed;" disabled onclick="submitSuperComment()">Selecciona un monto</button>
+    </div>
+  </div>
+  
+  <!-- MODAL DE RECOMPENSA DIARIA (COFRE) -->
+  <div class="dl-modal-overlay" id="dailyRewardModal" style="z-index: 9500; display: none;">
+    <div class="dl-modal-content" style="max-width: 350px; text-align: center; background: linear-gradient(145deg, var(--bg-card), #111); border: 2px solid var(--star); box-shadow: 0 0 30px rgba(255, 215, 0, 0.3);">
+      
+      <div style="font-size: 4em; margin-bottom: 5px; animation: pulse 1.5s infinite;">🎁</div>
+      <h2 style="color: var(--star); margin: 0 0 5px 0; text-shadow: 0 2px 5px rgba(0,0,0,0.8);">¡Bono Diario!</h2>
+      <p style="color: var(--text-main); font-size: 0.9em; margin-bottom: 20px;">Gracias por entrar hoy a MangaJH.</p>
+      
+      <div style="background: rgba(0,0,0,0.3); border-radius: 12px; padding: 15px; margin-bottom: 20px; border: 1px dashed var(--accent-1);">
+          <div style="font-size: 2em; font-weight: 900; color: #FFF; margin-bottom: 5px;">+<span id="dailyRewardAmount">0</span> 💰</div>
+          <div id="dailyRewardStreak" style="color: var(--danger); font-weight: bold; font-size: 0.9em;">🔥 Racha: 1 día(s)</div>
+      </div>
+      
+      <button class="btn-read" onclick="claimDailyReward()" style="width: 100%; background: var(--star); color: #000; font-size: 1.1em; padding: 12px; box-shadow: 0 4px 15px rgba(255, 215, 0, 0.4);">Abrir Cofre</button>
+    </div>
+  </div>
+
+
+
+  <!-- CONEXIÓN A TU ARCHIVO DE LÓGICA -->
+  <script src="script.js"></script>
+
+  <!-- MODAL DE LISTA DE AMIGOS -->
+  <div id="friendsListModal" style="display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.8); z-index: 9999; align-items: center; justify-content: center; backdrop-filter: blur(5px);">
+    <div style="background: var(--bg-card); width: 95%; max-width: 400px; border-radius: 15px; border: 1px solid var(--accent-1); display: flex; flex-direction: column; max-height: 70vh; box-shadow: 0 10px 30px rgba(0,0,0,0.8);">
+      <div style="padding: 15px 20px; background: rgba(0,0,0,0.2); border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; border-radius: 15px 15px 0 0;">
+        <h3 style="margin: 0; color: #FFF; font-size: 1.3em;">👥 Mis Amigos</h3>
+        <button onclick="closeFriendsList()" style="background: transparent; color: var(--danger); border: none; font-size: 1.5em; cursor: pointer; font-weight: bold;">✖</button>
+      </div>
+      <div id="friendsListContainer" style="flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 12px;">
+        <!-- Aquí aparecerán tus amigos generados por JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL DE CHAT PRIVADO -->
+  <div id="chatModal" style="display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.8); z-index: 10000; align-items: center; justify-content: center; backdrop-filter: blur(5px);">
+    <div style="background: var(--bg-card); width: 95%; max-width: 500px; border-radius: 15px; border: 1px solid var(--accent-1); display: flex; flex-direction: column; height: 75vh; box-shadow: 0 10px 30px rgba(0,0,0,0.8);">
+      <!-- Cabecera del Chat -->
+      <div style="padding: 15px 20px; background: rgba(0,0,0,0.2); border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; border-radius: 15px 15px 0 0;">
+        <h3 style="margin: 0; color: #FFF; font-size: 1.3em;" id="chatTitle">💬 Chat</h3>
+        <button onclick="closeChat()" style="background: transparent; color: var(--danger); border: none; font-size: 1.5em; cursor: pointer; font-weight: bold;">✖</button>
+      </div>
+      <!-- Área de Mensajes -->
+      <div id="chatMessages" style="flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 12px;"></div>
+      <!-- Caja de Texto -->
+      <div style="padding: 15px; background: rgba(0,0,0,0.2); border-top: 1px solid var(--border-color); display: flex; gap: 10px; border-radius: 0 0 15px 15px;">
+        <input type="text" id="chatInput" placeholder="Escribe un mensaje..." style="flex: 1; padding: 12px 15px; border-radius: 20px; border: 1px solid var(--border-color); background: var(--bg-main); color: #FFF; outline: none;">
+        <button class="btn-submit-comment" id="btnSendMsg" style="width: auto; padding: 10px 20px; border-radius: 20px; font-weight: bold;">Enviar</button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- MODAL DE LISTA DE USUARIOS (SEGUIDORES / SIGUIENDO) -->
+  <div id="userListModal" onclick="if(event.target === this) closeUserListModal()" style="display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.8); z-index: 10500; align-items: center; justify-content: center; backdrop-filter: blur(5px);">
+    <div style="background: var(--bg-card); width: 95%; max-width: 400px; border-radius: 15px; border: 1px solid var(--accent-1); display: flex; flex-direction: column; max-height: 70vh; box-shadow: 0 10px 30px rgba(0,0,0,0.8);">
+      <div style="padding: 15px 20px; background: rgba(0,0,0,0.2); border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; border-radius: 15px 15px 0 0;">
+        <h3 id="userListModalTitle" style="margin: 0; color: #FFF; font-size: 1.3em;">👥 Lista</h3>
+        <button onclick="closeUserListModal()" style="background: transparent; color: var(--danger); border: none; font-size: 1.5em; cursor: pointer; font-weight: bold;">✖</button>
+      </div>
+      <div id="userListContainer" style="flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 12px;"></div>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODAL FLOTANTE PARA SUBIR / EDITAR APORTE  -->
+  <!-- ========================================== -->
+  <div class="dl-modal-overlay" id="aporteModal" style="z-index: 7000; display: none;">
+    <div class="dl-modal-content" style="max-width: 500px; max-height: 90vh; overflow-y: auto; padding: 20px;">
+      <button class="dl-close-btn" onclick="closeAporteModal()">✕</button>
+      <h2 style="color: var(--accent-1); text-align: center; margin-bottom: 25px; margin-top: 10px;">🎨 Panel de Creador</h2>
+      
+      <!-- TÍTULO DE LA OBRA -->
+      <div class="form-group">
+        <label style="font-size: 1.1em; color: var(--accent-1);">Título de la Obra</label>
+        <input type="text" id="aporteMangaTitle" class="search-box" style="width: 100%; padding: 12px; font-size: 1.1em;" placeholder="Ej: Mi Manga / Novela" required>
+      </div>
+
+      <!-- FORMATO, ESTADO Y BADGE -->
+      <div class="three-cols">
+        <div class="form-group">
+          <label>Formato</label>
+          <select id="aporteMangaFormat" class="search-box" style="width: 100%;" onchange="updateAporteTerminology()">
+            <option value="manga">💭 Manga</option>
+            <option value="manhwa">📱 Manhwa</option>
+            <option value="comic">💥 Cómic</option>
+            <option value="novela">📖 Novela Ligera</option>
+            <option value="novela_normal">📚 Novela</option>
+            <option value="webnovel">🌐 Webnovel</option>
+            <option value="fanfic">✍️ Fanfic</option>
+            <option value="novela_corta">📘 Novela Corta</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Estado 📌</label>
+          <select id="aporteMangaStatus" class="search-box" style="width: 100%;">
+            <option value="En Emisión">🟢 En Emisión</option>
+            <option value="Finalizado">🔴 Finalizado</option>
+            <option value="Pausado">🟡 Pausado</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Etiqueta</label>
+          <select id="aporteMangaBadge" class="search-box" style="width: 100%;">
+            <option value="">Ninguna</option>
+            <option value="nuevo">Nuevo</option>
+            <option value="actualizado">Actualizado</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label style="font-size: 1.1em; color: var(--accent-1);">Selecciona los Géneros</label>
+        
+        <!-- Contenedor con barra de desplazamiento (Scroll) y flexbox -->
+        <div id="aporteGenresContainer" style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; margin-bottom: 15px; max-height: 140px; overflow-y: auto; padding: 12px; background: rgba(0,0,0,0.3); border-radius: 8px; border: 1px solid var(--border-color);">
+           <!-- Los géneros se inyectan aquí -->
+        </div>
+
+        <div style="display: flex; gap: 8px;">
+          <input type="text" id="aporteNewGenreInput" class="search-box" style="flex: 1; padding: 10px; font-size: 0.9em;" placeholder="¿Falta un género? Escríbelo aquí...">
+          <button class="btn-read" style="width: auto; padding: 10px 20px; font-size: 0.9em; background: var(--info); color: white; border: none;" onclick="addNewAporteGenre()">Añadir</button>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Sinopsis</label>
+        <textarea id="aporteMangaSynopsis" class="search-box" style="width: 100%; height: 90px; resize: vertical;" placeholder="Escribe la trama principal aquí..."></textarea>
+      </div>
+
+      <div class="form-group">
+        <label>Imágenes de Portada (Covers)</label>
+        <div class="dynamic-list" id="aporteCoversList"></div>
+        <button class="btn-read btn-add" onclick="addAporteInputRow('aporteCoversList', 'aporte-cover-input', 'URL de la imagen de portada')">+ Agregar otra portada</button>
+      </div>
+
+      <div class="form-group">
+        <label>Imágenes de Banner (Para el fondo)</label>
+        <div class="dynamic-list" id="aporteBannersList"></div>
+        <button class="btn-read btn-add" onclick="addAporteInputRow('aporteBannersList', 'aporte-banner-input', 'URL de la imagen del banner')">+ Agregar otro banner</button>
+      </div>
+
+      <div class="form-group">
+        <label id="aporteChaptersSectionLabel" style="color: var(--accent-1);">Gestor de Capítulos/Tomos</label>
+        <div class="dynamic-list" id="aporteChaptersList"></div>
+        <button class="btn-read btn-add" onclick="addAporteChapterRow()">+ Agregar otra fila de enlace</button>
+      </div>
+
+      <div class="form-group" style="text-align: left; background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; border: 1px dashed var(--info); margin-bottom: 20px;">
+        <label style="display:flex; align-items:center; gap:10px; cursor:pointer; color: var(--info); font-weight: bold; font-size: 0.95em;">
+          <input type="checkbox" id="aporteAllowEdit" style="width: 20px; height: 20px; accent-color: var(--info);">
+          🤝 Permitir que la comunidad edite esta obra
+        </label>
+      </div>
+
+      <div style="display: flex; gap: 15px; margin-top: 20px;">
+        <button class="btn-read" style="flex: 1; background: var(--bg-main); color: var(--text-main); border: 1px solid var(--border-color);" onclick="clearAporteForm()">Limpiar</button>
+        <button class="btn-read" style="flex: 3; margin-top: 0; background: var(--success); color: #000;" onclick="saveAporteManga()" id="btnSubmitAporteManga">☁️ Publicar Obra</button>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>
